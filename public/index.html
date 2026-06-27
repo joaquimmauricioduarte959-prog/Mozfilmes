@@ -1864,7 +1864,7 @@
     }
 
     // ================================================================
-    //  UPLOAD
+    //  UPLOAD CORRIGIDO PARA O SERVIDOR
     // ================================================================
     async function uploadFileChunked(type) {
         const fileInput = document.getElementById(type === 'poster' ? 'poster-file' : type === 'video' ? 'video-file' : 'subtitle-file');
@@ -1879,39 +1879,39 @@
         const progressText = document.getElementById(type + '-progress-text');
         progressContainer.style.display = 'block';
 
-        const fileId = 'upload_' + Date.now() + '_' + type + '_' + file.name.replace(/[^a-zA-Z0-9]/g, '_');
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-        let uploadedChunks = 0;
+        const formData = new FormData();
+        const fieldName = type === 'poster' ? 'poster' : type === 'video' ? 'video' : 'subtitle';
+        formData.append(fieldName, file);
 
         try {
-            for (let i = 0; i < totalChunks; i++) {
-                const start = i * CHUNK_SIZE;
-                const end = Math.min(start + CHUNK_SIZE, file.size);
-                const chunk = file.slice(start, end);
-                const arrayBuffer = await chunk.arrayBuffer();
-                const blob = new Blob([arrayBuffer], { type: file.type });
-                const chunkId = fileId + '_chunk_' + i;
-                await saveChunkToDB(chunkId, blob);
-                uploadedChunks++;
-                const percent = Math.round((uploadedChunks / totalChunks) * 100);
-                progressBar.style.width = percent + '%';
-                progressText.innerText = percent + '% (' + uploadedChunks + '/' + totalChunks + ')';
+            const endpoint = type === 'poster' ? '/api/upload-poster' : type === 'video' ? '/api/upload-video' : '/api/upload-subtitle';
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(errorData || 'Erro no upload');
             }
 
-            const metaId = fileId + '_meta';
-            const meta = { totalChunks, mimeType: file.type, name: file.name };
-            await saveChunkToDB(metaId, new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+            const data = await response.json();
 
             const urlField = document.getElementById(type === 'poster' ? 'movie-poster' : type === 'video' ? 'movie-video' : 'movie-subtitle');
-            urlField.value = '';
-            urlField.dataset.blobId = fileId;
-            urlField.dataset.totalChunks = totalChunks;
+            urlField.value = data.url;
+
             document.getElementById(type + '-file-name').innerText = file.name;
-            document.getElementById('admin-msg').innerHTML = `<span style="color:#00b894;">✅ ${file.name} carregado com sucesso (${totalChunks} chunks)!</span>`;
+
+            progressBar.style.width = '100%';
+            progressText.innerText = '100% ✅';
+
+            document.getElementById('admin-msg').innerHTML = `<span style="color:#00b894;">✅ ${file.name} carregado para o servidor!</span>`;
             mostrarNotificacao('📤 Upload concluído: ' + file.name, 'success');
-        } catch (e) {
-            document.getElementById('admin-msg').innerHTML = `<span style="color:#e74c3c;">❌ Erro no upload: ${e.message}</span>`;
-            mostrarNotificacao('❌ Erro no upload: ' + e.message, 'error');
+
+        } catch (error) {
+            console.error('Erro no upload:', error);
+            document.getElementById('admin-msg').innerHTML = `<span style="color:#e74c3c;">❌ Erro no upload: ${error.message}</span>`;
+            mostrarNotificacao('❌ Erro no upload: ' + error.message, 'error');
         } finally {
             setTimeout(() => {
                 progressContainer.style.display = 'none';
