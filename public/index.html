@@ -1863,7 +1863,7 @@
     }
 
     // ================================================================
-    //  UPLOAD CORRIGIDO PARA O SERVIDOR
+    //  UPLOAD CORRIGIDO - SEM /api DUPLICADO
     // ================================================================
     async function uploadFileChunked(type) {
         const fileInput = document.getElementById(type === 'poster' ? 'poster-file' : type === 'video' ? 'video-file' : 'subtitle-file');
@@ -1883,7 +1883,8 @@
         formData.append(fieldName, file);
 
         try {
-            const endpoint = type === 'poster' ? '/api/upload-poster' : type === 'video' ? '/api/upload-video' : '/api/upload-subtitle';
+            // CORREÇÃO: removido o '/api' duplicado
+            const endpoint = type === 'poster' ? '/upload-poster' : type === 'video' ? '/upload-video' : '/upload-subtitle';
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 body: formData
@@ -2541,6 +2542,9 @@
         }
     }
 
+    // ================================================================
+    //  ABRIR PLAYER POR FILME - CORRIGIDO (episódios funcionam)
+    // ================================================================
     function abrirPlayerByMovie(movieId) {
         // Procurar o filme pelo ID em todos os dados
         const allMovies = movieData.length > 0 ? movieData : getDefaultMovies();
@@ -2949,7 +2953,7 @@
     }
 
     // ================================================================
-    //  NAVEGAÇÃO POR SÉRIES - CORRIGIDA
+    //  NAVEGAÇÃO POR SÉRIES - CORRIGIDA (episódios abrem)
     // ================================================================
     function renderSeriesList() {
         const grid = document.getElementById('seriesGrid');
